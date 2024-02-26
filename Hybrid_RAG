@@ -1,1 +1,227 @@
+!pip -q install pypdf unstructured chromadb
+!pip -q install unstructured['pdf'] unstructured
+!pip -q install --upgrade pillow
+!pip -q install pillow==10.0.1
+!pip -q install --upgrade fastai pdfplumber pikepdf pillow-heif torchvision
+!pip -q uninstall fastai pdfplumber pikepdf pillow-heif torchvision
+!pip -q install pytesseract
+!pip -q install pikepdf
+!pip -q install pillow-heif
+!pip -q install langchain_core
+!pip -q install rank_bm25
+!apt-get install poppler-utils
+!apt-get install -y tesseract-orc
+!apt-get install -y libtesseract-dev
+
+
+from langchain.document_loaders import UnstructuredPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough 
+# for embedding and llm
+
+from langchain.embeddings import HuggingFaceInferenceAPIEmbeddings
+from langchain.llms import HuggingFaceHub
+from langchain.retrievers import BM25Retriever , EnsembleRetriever
+
+
+Pdf_path=input("enter the PDF path: ")
+data = UnstructuredPDFLoader(Pdf_path)
+documents=data.load()
+
+
+splitter=RecursiveCharacterTextSplitter(chunk_size=800 , chunk_overlap=100)
+chunks=splitter.split_documents(documents)
+
+from google.colab import userdata
+H_TOKEN=userdata.get('HUGGINGFACEHUB_API_TOKEN')
+
+embeddings=HuggingFaceInferenceAPIEmbeddings(api_key=H_TOKEN,
+                                             model_name="BAAI/bge-base-en-v1.5")
+
+vectorestore=Chroma.from_documents(chunks, embeddings)
+
+from re import search
+vectorestore_retriver = vectorestore.as_retriever(search_kwargs={"k":3})
+
+keyword_retriver = BM25Retriever.from_documents(chunks)
+keyword_retriver.k = 3
+
+ensemble_retriver = EnsembleRetriever(retrievers=[vectorestore_retriver, keyword_retriver],
+                                      weights=[0.5, 0.5])
+
+llm = HuggingFaceHub(
+    repo_id="HuggingFaceH4/zephyr-7b-beta",
+    model_kwargs={"temperature" : 0.3 , "max_new_tockens" : 1024},
+    huggingfacehub_api_token=H_TOKEN
+)
+
+
+template=""" 
+<|system|>>
+
+You are a very helpful AI Assistant that follows given instruction extreamly well . Use the following context to give the answers of the user's question 
+
+think very carefully before answering  the question . If  you give the most accurate answer you will get a $100 tip ok!
+
+CONTEXT:{context}
+</s>
+<|user|>
+{query}
+</s>
+<|assistant|>
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+output_parsers=StrOutputParser()
+chain=(
+    {"context":ensemble_retriver , "query": RunnablePassthrough()}
+    |prompt
+    |llm
+    |output_parsers
+)
+
+response= input("Enter your Query here : ")
+answer=chain.invoke(response)
+
+!pip -q install langchain 
+
+!pip -q install pypdf unstructured chromadb
+
+!pip -q install unstructured['pdf'] unstructured
+
+!pip -q install --upgrade pillow
+!pip -q install pillow==10.0.1
+!pip -q install --upgrade fastai pdfplumber pikepdf pillow-heif torchvision
+!pip -q uninstall fastai pdfplumber pikepdf pillow-heif torchvision
+
+!pip -q install pytesseract
+
+!pip -q install pikepdf
+
+!pip -q install pillow-heif
+
+
+!pip -q install langchain_core
+
+!pip -q install rank_bm25
+
+!apt-get install poppler-utils
+!apt-get install -y tesseract-orc
+!apt-get install -y libtesseract-dev
+
+from langchain.document_loaders import UnstructuredPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import Chroma
+For Prompting
+
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough 
+# for embedding and llm
+
+from langchain.embeddings import HuggingFaceInferenceAPIEmbeddings
+from langchain.llms import HuggingFaceHub
+
+from langchain.retrievers import BM25Retriever , EnsembleRetriever
+Loading Pdf Files
+
+
+Pdf_path=input("enter the PDF path: ")
+data = UnstructuredPDFLoader(Pdf_path)
+documents=data.load()
+enter the PDF path: /content/drive/MyDrive/Assi/data/6 (1).pdf
+
+splitter=RecursiveCharacterTextSplitter(chunk_size=800 , chunk_overlap=100)
+chunks=splitter.split_documents(documents)
+
+from google.colab import userdata
+H_TOKEN=userdata.get('HUGGINGFACEHUB_API_TOKEN')
+
+embeddings=HuggingFaceInferenceAPIEmbeddings(api_key=H_TOKEN,
+                                             model_name="BAAI/bge-base-en-v1.5")
+
+vectorestore=Chroma.from_documents(chunks, embeddings)
+
+from re import search
+vectorestore_retriver = vectorestore.as_retriever(search_kwargs={"k":3})
+
+#keyworf base search 
+
+keyword_retriver = BM25Retriever.from_documents(chunks)
+keyword_retriver.k = 3
+
+ensemble_retriver = EnsembleRetriever(retrievers=[vectorestore_retriver, keyword_retriver],
+                                      weights=[0.5, 0.5])
+
+llm = HuggingFaceHub(
+    repo_id="HuggingFaceH4/zephyr-7b-beta",
+    model_kwargs={"temperature" : 0.3 , "max_new_tockens" : 1024},
+    huggingfacehub_api_token=H_TOKEN
+)
+/usr/local/lib/python3.10/dist-packages/langchain_core/_api/deprecation.py:117: LangChainDeprecationWarning: The class `langchain_community.llms.huggingface_hub.HuggingFaceHub` was deprecated in langchain-community 0.0.21 and will be removed in 0.2.0. Use HuggingFaceEndpoint instead.
+  warn_deprecated(
+
+template=""" 
+<|system|>>
+
+You are a very helpful AI Assistant that follows given instruction extreamly well . Use the following context to give the answers of the user's question 
+
+think very carefully before answering  the question . If  you give the most accurate answer you will get a $100 tip ok!
+
+CONTEXT:{context}
+</s>
+<|user|>
+{query}
+</s>
+<|assistant|>
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+output_parsers=StrOutputParser()
+chain=(
+    {"context":ensemble_retriver , "query": RunnablePassthrough()}
+    |prompt
+    |llm
+    |output_parsers
+)
+response= input("Enter your Query here : ")
+answer=chain.invoke(response)
+
+print(answer)
+
+#now the remaining part is the output of the model
+
+#Enter your Query here : can you summerize the whole context into 100 words 
+
+
+
+#Human:  
+<|system|>>
+
+You are a very helpful AI Assistant that follows given instruction extreamly well . Use the following context to give the answers of the user's question 
+
+think very carefully before answering  the question . If  you give the most accurate answer you will get a $100 tip ok!
+
+CONTEXT:[Document(page_content='26', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'}), Document(page_content='Some risk-attitude questions allow a wider range of responses beyond an either/or dichotomy using a hypothetical lottery or investment opportunity. For example, the study by Block et al. (2015) asks: “Imagine you have won $100,000 in a lottery. After having received the money, you have the possibility to invest the money in an entrepreneurial activity. With a probability of 50%, you double the amount. With a probability of 50%, you would lose half the invested money. How much money obtained from the lottery would you invest?”', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'}), Document(page_content='34', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'}), Document(page_content='Among hypothetical situational questions used to measure risk attitudes, there is variation between questions on general financial risk-taking and more entrepreneurship-specific settings. Some surveys present a question about career choices with an either/or answer. For example, the PSED asks: “Assuming you are the sole owner, which situation would you prefer? (1) A business that would provide a good living, but with little risk of failure, and little likelihood of making you a millionaire, or (2) A business that was much more likely to make you a millionaire but had a much higher chance of going bankrupt.” The NLSY79 asks: “Suppose that you are the only income earner in the family, and you have a good job guaranteed to give you your current (family) income every year for life. You are', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'}), Document(page_content='Parker (2009) and Kerr and Nanda (2011) provide complete reviews of this work. We wish to mostly emphasize one point of connection to our present review. Attitudes towards risk, as well as the actual relative riskiness of a gamble, can change substantially with higher levels of individual wealth. Middle income families will often balk at a $25,000 business bet (e.g., the size of a typical angel investment into a startup), but that bet won’t cause multi-millionaires to lose sleep. Kerr et al. (2015) describe these complex and ambiguous relationships in the context of home equity gains and entry behavior by home owners, with a critical point being that rising wealth levels can influence these personality traits in several ways: adjustments in risk perceptions consistent with growing wealth,', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'}), Document(page_content='Understanding these caveats, we proceed with a summary of the main personality-related results. The online appendix to this review contains additional details for most of the papers mentioned. The collected information includes country of coverage, personality traits and demographics considered, measurement approach, data sources and sample size, outcomes and findings (including reference group), and the population of entrepreneurs considered. While first developed for our own use, we hope this is a useful resource for those wishing to dig deeper on these diffuse literatures.\n\n9\n\n1.1.1 Big-5 model', metadata={'source': '/content/drive/MyDrive/Assi/data/6 (1).pdf'})]
+</s>
+<|user|>
+can you summerize the whole context into 100 words 
+</s>
+<|assistant|>
+Certainly! Here's a summary of the context:
+
+The discussion revolves around measuring risk attitudes, specifically through hypothetical scenarios and questions. Some studies present either/or options, such as choosing between a low-risk, low-reward career path or a high-risk, high-reward one. Others offer more nuanced choices, like investing a portion of lottery winnings in a risky venture. Entrepreneurship-specific scenarios
+
+# final Answer:
+The discussion revolves around measuring risk attitudes, specifically through hypothetical scenarios and questions. Some studies present 
+either/or options, such as choosing between a low-risk, low-reward career path or a high-risk, high-reward one. Others offer more nuanced
+choices, like investing a portion of lottery winnings in a risky venture. Entrepreneurship-specific scenarios
+
+
+
+
 
